@@ -1,0 +1,6 @@
+blessed
+py-itime
+pynvml
+psutil
+tensorboardX
+tensorboard
