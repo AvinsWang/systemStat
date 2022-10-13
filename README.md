@@ -1,5 +1,8 @@
 # systemStat
-A simple B/S program for collecting and displaying system information.
+A simple B/S python program for collecting and displaying system information
+
+## Demo
+![demo_img](demo.png)
 
 ## Glossary
 cm: cpu & memory
@@ -57,11 +60,6 @@ python main.py --tb_server --bg
 # 2. the interval for send statics form client to server should same to config.py interval
 * * * * * python3 /etc/systemStat/systemStat/main.py --client --plaintext your_planetext >> /etc/systemStat/logs/client.log 2>&1
 ```
-
-## Demo
-![demo_img](demo.png)
-
-
 
 ## Acknowledgment
 Thanks for [gpustat](https://github.com/wookayin/gpustat) great work!
