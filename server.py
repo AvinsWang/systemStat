@@ -58,6 +58,8 @@ class ServerSocket:
                 if self._verify(cyphertext):
                     utils.save_stat(recv_dic, config.stat_log_dir)
                     cli_hostname = addr[0]
+                    if 'client_name' in recv_dic and recv_dic['client_name'] != '':
+                        cli_hostname = recv_dic['client_name']
                     date = iTime(recv_dic['datetime']).date_str()
                     cli_tb_log_dir = osp.join(config.tb_log_dir, cli_hostname, date)
                     os.makedirs(cli_tb_log_dir, exist_ok=True)

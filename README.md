@@ -30,7 +30,7 @@ net: network
 
 2. Install requriments  
 ```shell
-pip install -f requriments.txt
+pip install -r requriments.txt
 ```
 
 3. set server *config.py* 
