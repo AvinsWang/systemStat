@@ -8,6 +8,10 @@ from itime import iTime
 from tensorboardX import SummaryWriter
 
 
+# if iTime not found, do
+# pip install py-itime
+
+
 def exec_shell(cmd):
     res = subprocess.Popen(cmd, shell=True, stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
     result = res.stdout.read()

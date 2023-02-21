@@ -2,7 +2,10 @@ import os
 import sys
 import argparse
 import traceback
-from itime import iTime
+try:
+    from itime import iTime
+except:
+    print("iTime not found, please install py-itime")
 
 import config
 import utils
@@ -17,6 +20,7 @@ def get_args():
     parser.add_argument('--alarm', action='store_true')
 
     parser.add_argument('--tb_server', action='store_true', help="Launch tensorboard server")
+    parser.add_argument('--tb_port', default=6006, help="Tensorboard port")
     parser.add_argument('--bg', action='store_true', help="Launch tensorboard server background")
 
     parser.add_argument('--local', action='store_true', help="Show system statics on stdout")
@@ -46,6 +50,7 @@ def run():
     if args.tb_server:
         cmd = f"python -m tensorboard.main " \
               f"--logdir={config.tb_log_dir} " \
+              f"--port={args.tb_port}"\
               f"--window_title=systemStatTB " \
               f"--reload_multifile=true " \
               f"--reload_multifile_inactive_secs=60 " \
