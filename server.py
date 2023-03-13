@@ -1,12 +1,16 @@
 import json
 import os
 import socket
+import logging
 import traceback
 import os.path as osp
 from itime import iTime
 
 import config
 import utils
+
+
+server_log = logging.getLogger(config.server_log_name)
 
 
 class ServerSocket:
@@ -22,9 +26,9 @@ class ServerSocket:
         try:
             self.server = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
             self.server.setsockopt(socket.SOL_SOCKET,socket.SO_REUSEADDR, 1)
-            print(f"Server init successfully! {self.host}:{self.port}")
+            server_log.info(f"Server init successfully! {self.host}:{self.port}")
         except socket.error as e:
-            print(f"Server init failed! {self.host}:{self.port}")
+            server_log.info(f"Server init failed! {self.host}:{self.port}")
             traceback.print_exc()
         self.server.bind((self.host, self.port))
         self.server.listen(self.backlog)
@@ -36,7 +40,7 @@ class ServerSocket:
             return False
 
     def listening(self):
-        print("Server start listening...")
+        server_log.info("Server start listening...")
 
         tb_writer_dic = {}
         uts_tommrow = iTime.today().delta(days=1).uts()
@@ -49,7 +53,7 @@ class ServerSocket:
                 cli, addr = self.server.accept()
                 log_head = f"{datetime}| Server| {config.server_host} Clent| {addr[0]:>16s}:{str(addr[1]):>5s}|"
             except Exception as e:
-                print(f"{datetime}| Server| Error occured when server accept datas. ")
+                server_log.info(f"{datetime}| Server| Error occured when server accept datas. ")
                 traceback.print_exc()
             try:
                 recv_dic = cli.recv(self.buf_size).decode()
@@ -68,13 +72,13 @@ class ServerSocket:
                         tb_writer_dic[cli_hostname] = utils.SysstatTB(cli_tb_log_dir, gpu_count)
                     tb_writer = tb_writer_dic[cli_hostname]
                     tb_writer.update(recv_dic)
-                    print(f"{log_head} Transport system statics successfully.")
+                    server_log.info(f"{log_head} Send system statics to server successfully.")
                     cli.send(utils.dic2byte({'state_code': '200'}))
                 else:
-                    print(f"{log_head} Authorization failed!")
+                    server_log.info(f"{log_head} Authorization failed!")
                     cli.send(utils.dic2byte({'state_code': '401.1'}))
             except Exception as e:
-                print(f"{log_head} occur errors while processing received data!")
+                server_log.info(f"{log_head} occur errors while processing received data!")
                 cli.send(utils.dic2byte({'state_code': '502'}))
                 traceback.print_exc()
             finally:

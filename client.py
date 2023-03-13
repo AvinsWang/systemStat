@@ -1,6 +1,11 @@
 import json
 import socket
 import utils
+import logging
+import config
+
+
+client_log = logging.getLogger(config.client_log_name)
 
 
 class ClientSocket:
@@ -20,8 +25,11 @@ class ClientSocket:
             self.client = None
 
     def send_msg(self, msg, plaintext):
-        msg.update({'cyphertext': utils.gen_cyphertext(plaintext)})
-        msg = json.dumps(msg)
-        self.client.send(msg.encode('utf-8'))
-        recv = self.client.recv(self.buf_size)
-        return recv
+        try:
+            msg.update({'cyphertext': utils.gen_cyphertext(plaintext)})
+            msg = json.dumps(msg)
+            self.client.send(msg.encode('utf-8'))
+            recv = self.client.recv(self.buf_size)
+            return recv
+        except:
+            return ''

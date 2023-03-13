@@ -6,6 +6,8 @@ import subprocess
 import os.path as osp
 from itime import iTime
 from tensorboardX import SummaryWriter
+import config
+import traceback
 
 
 # if iTime not found, do
@@ -95,17 +97,35 @@ def check_server_return_state(state_dic):
     else:
         print(f"{datetime}| {state_code} Undefined state code.")
 
+class Logger:
+    def __init__(self, name, log_path=None, level=logging.INFO):
+        self._logger = logging.getLogger(name)
+        handler = logging.FileHandler(log_path)
+        formatter = logging.Formatter('%(asctime)s %(filename)s %(lineno)s |%(levelname)s %(message)s')
+        handler.setFormatter(formatter)
+        self._logger.addHandler(handler)
+        self._logger.setLevel(level)
 
-def get_logger(name, log_path, level=logging.INFO):
-    logging.basicConfig(filename=log_path)
-    logger = logging.getLogger(name)
-    formatter = logging.Formatter('%(asctime)s %(filename)s %(lineno)s |%(levelname)s %(message)s')
-    sh = logging.StreamHandler()
-    sh.setFormatter(formatter)
-    logger.setLevel(level)
-    logger.addHandler(sh)
-    return logger
+    def info(self, msg):
+        if self._logger is not None:
+            self._logger.info(msg)
+
+    def warning(self, msg):
+        if self._logger is not None:
+            self._logger.warning(msg)
+
+    def exception(self, e):
+        if self._logger is not None:
+            self._logger.exception(e)
 
 
 def dic2byte(dic):
-    return json.dumps(dic).encode()
+    try:
+        return json.dumps(dic).encode()
+    except:
+        traceback.print_exc()
+        return b'state_code: 000'
+
+
+Logger(config.server_log_name, log_path=config.server_log_path)
+Logger(config.client_log_name, log_path=config.client_log_path)

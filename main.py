@@ -1,17 +1,22 @@
 import os
 import sys
+import logging
 import argparse
 import traceback
 try:
     from itime import iTime
-except:
-    print("iTime not found, please install py-itime")
+except ModuleNotFoundError:
+    raise ModuleNotFoundError("iTime not found, please install py-itime")
 
 import config
 import utils
 import sysstat
 from server import ServerSocket
 from client import ClientSocket
+
+
+server_log = logging.getLogger(config.server_log_name)
+client_log = logging.getLogger(config.client_log_name)
 
 
 def get_args():
@@ -40,17 +45,20 @@ def run():
     args = get_args()
     datetime = iTime.now().datetime_str()
     if args.server:
+        os.makedirs(config.stat_log_dir, exist_ok=True)
+        os.makedirs(config.tb_log_dir, exist_ok=True)
         Server = ServerSocket(config.server_host, config.server_port, config.server_cyphertext)
         Server.listening()
 
     if args.alarm:
         # send alarm to admin
+        # use email etc.
         pass
 
     if args.tb_server:
         cmd = f"python -m tensorboard.main " \
               f"--logdir={config.tb_log_dir} " \
-              f"--port={args.tb_port}"\
+              f"--port={args.tb_port} "\
               f"--window_title=systemStatTB " \
               f"--reload_multifile=true " \
               f"--reload_multifile_inactive_secs=60 " \
@@ -84,7 +92,7 @@ def run():
             utils.check_server_return_state(state_dic)
             Clinet.close_client()
         except Exception:
-            print(f"{datetime}| Send system statics to server failed!")
+            client_log.info(f"{datetime}| Send system statics to server failed!")
             traceback.print_exc()
 
 
