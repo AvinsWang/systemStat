@@ -2,16 +2,46 @@ import os
 import json
 import logging
 import hashlib
+import traceback
 import subprocess
 import os.path as osp
 from itime import iTime
 from tensorboardX import SummaryWriter
-import config
-import traceback
 
+import server_config, client_config
 
 # if iTime not found, do
 # pip install py-itime
+
+
+class Logger:
+    def __init__(self, name, log_path=None, level=logging.INFO):
+        log_dir = osp.dirname(log_path)
+        os.makedirs(log_dir, exist_ok=True)
+        self._logger = logging.getLogger(name)
+        handler = logging.FileHandler(log_path)
+        formatter = logging.Formatter('%(asctime)s %(filename)s %(lineno)s |%(levelname)s %(message)s')
+        handler.setFormatter(formatter)
+        self._logger.addHandler(handler)
+        self._logger.setLevel(level)
+
+    def info(self, msg):
+        if self._logger is not None:
+            self._logger.info(msg)
+
+    def warning(self, msg):
+        if self._logger is not None:
+            self._logger.warning(msg)
+
+    def exception(self, e):
+        if self._logger is not None:
+            self._logger.exception(e)
+
+
+Logger(server_config.server_log_name, log_path=server_config.server_log_path)
+Logger(client_config.client_log_name, log_path=client_config.client_log_path)
+
+client_log = logging.getLogger(client_config.client_log_name)
 
 
 def exec_shell(cmd):
@@ -87,36 +117,14 @@ def check_server_return_state(state_dic):
     state_dic = state_dic.decode()
     state_dic = json.loads(state_dic)
     state_code = str(state_dic['state_code'])
-    datetime = iTime.now().datetime_str()
     if state_code == '200':
-        print(f"{datetime}| {state_code} Sent system statics successfully!")
+        client_log.info(f"[{state_code}] Sent system statics successfully!")
     elif state_code == '401.1':
-        print(f"{datetime}| {state_code} Authorization failed!")
+        client_log.error(f"[{state_code}] Authorization failed!")
     elif state_code == '502':
-        print(f"{datetime}| {state_code} Sever internal error!")
+        client_log.error(f"[{state_code}] Sever internal error!")
     else:
-        print(f"{datetime}| {state_code} Undefined state code.")
-
-class Logger:
-    def __init__(self, name, log_path=None, level=logging.INFO):
-        self._logger = logging.getLogger(name)
-        handler = logging.FileHandler(log_path)
-        formatter = logging.Formatter('%(asctime)s %(filename)s %(lineno)s |%(levelname)s %(message)s')
-        handler.setFormatter(formatter)
-        self._logger.addHandler(handler)
-        self._logger.setLevel(level)
-
-    def info(self, msg):
-        if self._logger is not None:
-            self._logger.info(msg)
-
-    def warning(self, msg):
-        if self._logger is not None:
-            self._logger.warning(msg)
-
-    def exception(self, e):
-        if self._logger is not None:
-            self._logger.exception(e)
+        client_log.error(f"[{state_code}] Undefined state code.")
 
 
 def dic2byte(dic):
@@ -125,7 +133,3 @@ def dic2byte(dic):
     except:
         traceback.print_exc()
         return b'state_code: 000'
-
-
-Logger(config.server_log_name, log_path=config.server_log_path)
-Logger(config.client_log_name, log_path=config.client_log_path)

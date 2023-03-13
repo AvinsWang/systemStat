@@ -6,11 +6,11 @@ import traceback
 import os.path as osp
 from itime import iTime
 
-import config
 import utils
+import server_config, client_config
 
 
-server_log = logging.getLogger(config.server_log_name)
+server_log = logging.getLogger(server_config.server_log_name)
 
 
 class ServerSocket:
@@ -26,13 +26,12 @@ class ServerSocket:
         try:
             self.server = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
             self.server.setsockopt(socket.SOL_SOCKET,socket.SO_REUSEADDR, 1)
+            self.server.bind((self.host, self.port))
+            self.server.listen(self.backlog)
             server_log.info(f"Server init successfully! {self.host}:{self.port}")
         except socket.error as e:
-            server_log.info(f"Server init failed! {self.host}:{self.port}")
-            traceback.print_exc()
-        self.server.bind((self.host, self.port))
-        self.server.listen(self.backlog)
-
+            server_log.exception(f"Server init failed! {self.host}:{self.port}")
+        
     def _verify(self, cyphertext_recv):
         if self.cyphertext == cyphertext_recv:
             return True
@@ -40,46 +39,43 @@ class ServerSocket:
             return False
 
     def listening(self):
+        print("Server start listening...")
         server_log.info("Server start listening...")
 
         tb_writer_dic = {}
-        uts_tommrow = iTime.today().delta(days=1).uts()
+        uts_tomorrow = iTime.today().delta(days=1).uts()
         while True:
-            datetime = iTime.now().datetime_str()
-            if iTime.now().delta(minutes=config.interval).uts() > uts_tommrow:
-                uts_tommrow = iTime.today().delta(days=1).uts()
+            if iTime.now().delta(minutes=client_config.interval).uts() > uts_tomorrow:
+                uts_tomorrow = iTime.today().delta(days=1).uts()
                 tb_writer_dic = {}
             try:
                 cli, addr = self.server.accept()
-                log_head = f"{datetime}| Server| {config.server_host} Clent| {addr[0]:>16s}:{str(addr[1]):>5s}|"
+                log_head = f"CLIENT [{addr[0]}:{str(addr[1])}]"
+                try:
+                    recv_dic = cli.recv(self.buf_size).decode()
+                    recv_dic = json.loads(recv_dic)
+                    cyphertext = recv_dic.pop('cyphertext')
+                    if self._verify(cyphertext):
+                        utils.save_stat(recv_dic, server_config.stat_log_dir)
+                        cli_hostname = addr[0]
+                        if 'client_name' in recv_dic and recv_dic['client_name'] != '':
+                            cli_hostname = recv_dic['client_name']
+                        date = iTime(recv_dic['datetime']).date_str()
+                        cli_tb_log_dir = osp.join(server_config.tb_log_dir, cli_hostname, date)
+                        os.makedirs(cli_tb_log_dir, exist_ok=True)
+                        if cli_hostname not in tb_writer_dic:
+                            gpu_count = sum([1 for k in recv_dic if 'gpu/' in k])
+                            tb_writer_dic[cli_hostname] = utils.SysstatTB(cli_tb_log_dir, gpu_count)
+                        tb_writer = tb_writer_dic[cli_hostname]
+                        tb_writer.update(recv_dic)
+                        server_log.info(f"Received from {log_head} successfully.")
+                        cli.send(utils.dic2byte({'state_code': '200'}))
+                    else:
+                        server_log.info(f"{log_head} Authorization failed!")
+                        cli.send(utils.dic2byte({'state_code': '401.1'}))
+                    cli.close()
+                except Exception as e:
+                    cli.send(utils.dic2byte({'state_code': '502'}))
+                    server_log.exception(f"{log_head} occur errors while processing received data!")
             except Exception as e:
-                server_log.info(f"{datetime}| Server| Error occured when server accept datas. ")
-                traceback.print_exc()
-            try:
-                recv_dic = cli.recv(self.buf_size).decode()
-                recv_dic = json.loads(recv_dic)
-                cyphertext = recv_dic.pop('cyphertext')
-                if self._verify(cyphertext):
-                    utils.save_stat(recv_dic, config.stat_log_dir)
-                    cli_hostname = addr[0]
-                    if 'client_name' in recv_dic and recv_dic['client_name'] != '':
-                        cli_hostname = recv_dic['client_name']
-                    date = iTime(recv_dic['datetime']).date_str()
-                    cli_tb_log_dir = osp.join(config.tb_log_dir, cli_hostname, date)
-                    os.makedirs(cli_tb_log_dir, exist_ok=True)
-                    if cli_hostname not in tb_writer_dic:
-                        gpu_count = sum([1 for k in recv_dic if 'gpu/' in k])
-                        tb_writer_dic[cli_hostname] = utils.SysstatTB(cli_tb_log_dir, gpu_count)
-                    tb_writer = tb_writer_dic[cli_hostname]
-                    tb_writer.update(recv_dic)
-                    server_log.info(f"{log_head} Send system statics to server successfully.")
-                    cli.send(utils.dic2byte({'state_code': '200'}))
-                else:
-                    server_log.info(f"{log_head} Authorization failed!")
-                    cli.send(utils.dic2byte({'state_code': '401.1'}))
-            except Exception as e:
-                server_log.info(f"{log_head} occur errors while processing received data!")
-                cli.send(utils.dic2byte({'state_code': '502'}))
-                traceback.print_exc()
-            finally:
-                cli.close()
+                server_log.exception(f"Server occurred error when server accepting datas. ")

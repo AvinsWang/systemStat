@@ -2,10 +2,10 @@ import json
 import socket
 import utils
 import logging
-import config
+import client_config
 
 
-client_log = logging.getLogger(config.client_log_name)
+client_log = logging.getLogger(client_config.client_log_name)
 
 
 class ClientSocket:
@@ -16,8 +16,12 @@ class ClientSocket:
         self.client = None
 
     def init_client(self):
-        self.client = socket.socket()
-        self.client.connect((self.host, self.port))
+        try:
+            self.client = socket.socket()
+            self.client.connect((self.host, self.port))
+        except:
+            client_log.exception(f"Init clinet {self.host}:{self.port} failed!")
+            exit()
 
     def close_client(self):
         if isinstance(self.client, socket.socket):
@@ -28,8 +32,12 @@ class ClientSocket:
         try:
             msg.update({'cyphertext': utils.gen_cyphertext(plaintext)})
             msg = json.dumps(msg)
-            self.client.send(msg.encode('utf-8'))
-            recv = self.client.recv(self.buf_size)
-            return recv
+            try:
+                self.client.send(msg.encode('utf-8'))
+                recv = self.client.recv(self.buf_size)
+                return recv
+            except:
+                client_log.error('Sent statics failed!')
         except:
-            return ''
+            client_log.error('Dump statics(python dict) to json failed!')
+            return None

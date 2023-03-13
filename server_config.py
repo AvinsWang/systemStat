@@ -10,18 +10,5 @@ server_log_path = '/etc/systemStat/logs/server.log'
 # server log name
 server_log_name = 'systemStat_server'
 # server host and port to be exposed to clients
-server_host = "3a17ebe52abf"
-server_port = 6012
-
-
-# === client setting ===
-# client send data to server host & port
-# host and port for client connect to server
-client_log_path = '/etc/systemStat/logs/client.log'
-client_log_name = 'systemStat_client'
-server_host = "3a17ebe52abf"
-server_port = 6012
-# the name to identify client
-client_name = '69'
-# send statics from client to server interval, minutes
-interval = 1
+server_host = "neolix-69"
+server_port = 6050

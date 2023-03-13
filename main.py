@@ -8,15 +8,15 @@ try:
 except ModuleNotFoundError:
     raise ModuleNotFoundError("iTime not found, please install py-itime")
 
-import config
 import utils
 import sysstat
 from server import ServerSocket
 from client import ClientSocket
+import server_config, client_config
 
 
-server_log = logging.getLogger(config.server_log_name)
-client_log = logging.getLogger(config.client_log_name)
+server_log = logging.getLogger(server_config.server_log_name)
+client_log = logging.getLogger(client_config.client_log_name)
 
 
 def get_args():
@@ -45,9 +45,9 @@ def run():
     args = get_args()
     datetime = iTime.now().datetime_str()
     if args.server:
-        os.makedirs(config.stat_log_dir, exist_ok=True)
-        os.makedirs(config.tb_log_dir, exist_ok=True)
-        Server = ServerSocket(config.server_host, config.server_port, config.server_cyphertext)
+        os.makedirs(server_config.stat_log_dir, exist_ok=True)
+        os.makedirs(server_config.tb_log_dir, exist_ok=True)
+        Server = ServerSocket(server_config.server_host, server_config.server_port, server_config.server_cyphertext)
         Server.listening()
 
     if args.alarm:
@@ -57,7 +57,7 @@ def run():
 
     if args.tb_server:
         cmd = f"python -m tensorboard.main " \
-              f"--logdir={config.tb_log_dir} " \
+              f"--logdir={server_config.tb_log_dir} " \
               f"--port={args.tb_port} "\
               f"--window_title=systemStatTB " \
               f"--reload_multifile=true " \
@@ -77,11 +77,11 @@ def run():
 
     if args.client:
         if args.host is None:
-            args.host = config.server_host
+            args.host = client_config.server_host
         if args.port is None:
-            args.port = config.server_port
+            args.port = client_config.server_port
         if args.client_name == '':
-            args.client_name = config.client_name
+            args.client_name = client_config.client_name
         try:
             stat_dic = sysstat.sysstat()
             stat_dic.update({'datetime': iTime(stat_dic['datetime']).delta(hours=args.tz).datetime_str()})
