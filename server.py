@@ -14,7 +14,7 @@ server_log = logging.getLogger(server_config.server_log_name)
 
 
 class ServerSocket:
-    def __init__(self, host, port, cyphertext, backlog=5, buf_size=1024):
+    def __init__(self, host, port, cyphertext, backlog=128, buf_size=1024):
         self.host = host
         self.port = port
         self.cyphertext = cyphertext
@@ -50,10 +50,25 @@ class ServerSocket:
                 tb_writer_dic = {}
             try:
                 cli, addr = self.server.accept()
+            except Exception:
+                try:
+                    server_log.exception(f"CLIENT [{addr[0]}:{str(addr[1])}] Error occured on accepting data!!")
+                    cli.send(utils.dic2byte({'state_code': '502'}))
+                    traceback.print_exc()
+                except Exception:
+                    server_log.exception(f"Error occured on accepting data!!")
+                    cli.send(utils.dic2byte({'state_code': '502'}))
+                continue
+            try:
                 log_head = f"CLIENT [{addr[0]}:{str(addr[1])}]"
                 try:
                     recv_dic = cli.recv(self.buf_size).decode()
-                    recv_dic = json.loads(recv_dic)
+                    try:
+                        recv_dic = json.loads(recv_dic)
+                    except Exception:
+                        server_log.info(f"CAN'T decode Received [{recv_dic}] from {log_head}  as json!")
+                        cli.send(utils.dic2byte({'state_code': '502'}))
+                        continue
                     cyphertext = recv_dic.pop('cyphertext')
                     if self._verify(cyphertext):
                         utils.save_stat(recv_dic, server_config.stat_log_dir)
@@ -74,7 +89,7 @@ class ServerSocket:
                         server_log.info(f"{log_head} Authorization failed!")
                         cli.send(utils.dic2byte({'state_code': '401.1'}))
                     cli.close()
-                except Exception as e:
+                except Exception:
                     cli.send(utils.dic2byte({'state_code': '502'}))
                     server_log.exception(f"{log_head} occur errors while processing received data!")
             except Exception as e:

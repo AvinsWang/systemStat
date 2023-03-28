@@ -26,20 +26,39 @@ net: network
 
 ## How to use
 ### Set & Launch Server
-1. clone or download the repo
+- make worksapce  
+```shell
+mkdir /etc/systemStat
+```
+- clone or download the repo
+```shell
+cd /etc/systemStat
+git clone git@github.com:AvinsWang/systemStat.git
+```
 
-2. Install requriments  
+- Install requriments  
 ```shell
 pip install -r requriments.txt
 ```
 
-3. set server *config.py* 
-    - server_host: your_hostname
-    - server_port: pick_a_port
-    - server_cyphertext: `echo -n your_plaintext | md5sum`
-    - stat_log_dir: dir_to_save_infos(json/client/day)
-    - tb_log_dir: dir_to_save_tensorboard_data
-    - interval: send stats from client to server interval, minutes
+- set server_config
+```python
+# === server setting ===
+# echo -n your_plaintext | md5sum
+server_cyphertext = '4ca53a363c7890e1cff6264c4a824a64'
+# to save system statics json
+stat_log_dir = '/etc/systemStat/systemStat/logs/stat'
+# to save tensorboard log
+tb_log_dir = '/etc/systemStat//systemStat/logs/tb'
+# to save server log
+server_log_path = '/etc/systemStat/systemStat/logs/server.log'
+# server log name
+server_log_name = 'systemStat_server'
+# server host and port to be exposed to clients
+server_host = ''
+server_port = 8008
+
+```
 4. launch server  
 ```shell
 python main.py --server
@@ -49,6 +68,8 @@ python main.py --server
 ```shell
 # launch tensorboard server on background
 python main.py --tb_server --bg
+# or, specify tensorboard port
+pythom main.py --tb_port 8008 -bg
 ```
 **Notice: server and tb_server should be launched on same machine**
 
