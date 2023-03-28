@@ -74,12 +74,29 @@ pythom main.py --tb_port 8008 -bg
 **Notice: server and tb_server should be launched on same machine**
 
 ### Set & Launch Client
+- set client_config.py
+```python
+# === client setting ===
+# client send data to server host & port
+# host and port for client connect to server
+client_log_path = '/etc/systemStat/logs/client.log'
+client_log_name = 'systemStat_client'
+# The host & port to be connected
+server_host = '127.0.0.1'
+server_port = 8008
+# the name to identify this client, DO NOT repeat
+client_name = 'test_server'
+# send statics from client to server interval, minutes
+interval = 1
+```
+
 ```shell
 # add a task on crontab
 # notice: 
 # 1. your planetext should same to the plaintext which convert(md5) to config.py server_cyphertext
 # 2. the interval for send statics form client to server should same to config.py interval
-* * * * * python3 /etc/systemStat/systemStat/main.py --client --plaintext your_planetext >> /etc/systemStat/logs/client.log 2>&1
+# e.g. interval=1, every one minute send to server
+* * * * * python3 /etc/systemStat/systemStat/main.py --client --plaintext your_planetext
 ```
 
 ## Acknowledgment
